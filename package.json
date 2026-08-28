@@ -1,0 +1,19 @@
+{
+  "name": "mentor-simulator",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "start": "npm --workspace apps/server start",
+    "dev:server": "npm --workspace apps/server run dev",
+    "dev:desktop": "npm --workspace apps/desktop run dev",
+    "dev": "concurrently -k \"npm run dev:server\" \"npm run dev:desktop\"",
+    "test": "npm --workspace apps/server test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
