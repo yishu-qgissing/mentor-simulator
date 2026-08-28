@@ -6,7 +6,24 @@
     <title>Mentor Simulator</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main style="min-height:100vh;padding:72px 28px;background:#f5f6f8;color:#20242c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <strong style="font-size:18px">Mentor Simulator</strong>
+        <p id="boot-status" style="margin-top:12px;color:#68707d;line-height:1.6">正在加载工作台...</p>
+      </main>
+    </div>
+    <script>
+      function showBootError(message) {
+        const status = document.getElementById("boot-status");
+        if (status) status.textContent = message || "界面资源加载失败，请重新安装最新版。";
+      }
+      window.addEventListener("error", (event) => {
+        showBootError(event.error?.message || event.message);
+      }, true);
+      window.addEventListener("unhandledrejection", (event) => {
+        showBootError(event.reason?.message || String(event.reason || ""));
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
