@@ -24,10 +24,23 @@
   },
   "build": {
     "appId": "com.mentorsimulator.desktop",
+    "electronVersion": "44.0.0",
     "productName": "Mentor Simulator",
     "artifactName": "Mentor-Simulator-${version}-${arch}.${ext}",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "electron/**/*", "package.json"],
-    "mac": { "category": "public.app-category.productivity", "target": ["dmg", "zip"] }
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
   }
 }
