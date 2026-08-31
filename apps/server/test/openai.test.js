@@ -60,3 +60,25 @@ test("weekly generation falls back when web search is unavailable", async () => 
     else delete process.env.OPENAI_API_KEY;
   }
 });
+
+test("weekly generation still returns a report when the model is unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "test-key";
+  globalThis.fetch = async () => new Response("gateway unavailable", { status: 503 });
+  const context = JSON.stringify({
+    sources: [{ title: "AI 产品动态", url: "https://example.com/ai" }],
+    projects: [{ name: "竞品研究", todos: [{ title: "梳理用户反馈", status: "todo" }] }],
+    questions: []
+  });
+  try {
+    const report = await generateWeeklyReport(context);
+    assert.match(report, /本周周报（降级版）/);
+    assert.match(report, /AI 产品动态/);
+    assert.match(report, /梳理用户反馈/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey) process.env.OPENAI_API_KEY = originalKey;
+    else delete process.env.OPENAI_API_KEY;
+  }
+});
