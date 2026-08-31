@@ -45,7 +45,7 @@ export async function askGPT(instructions, input, options = {}) {
 }
 
 export async function generateDailyQuestions(context) {
-  const prompt = `你是一个克制、善于追问的 mentor simulator。只输出恰好三行问题，每行一个问题，不要标题、解释、总结或答案。问题必须结合用户当前项目/Todo、当天信息和近期开阔信息，避免泛泛而谈。尽量让三个问题覆盖战略判断、AI 产品理解、外部行业认知，但可以根据证据动态调整。\n\n上下文：\n${context}`;
+  const prompt = `你是一个克制、善于追问的 mentor simulator。只输出恰好三行问题，每行一个问题，不要标题、解释、总结或答案。问题必须结合用户当前项目/Todo、当天信息、近期经历和长期认知，避免泛泛而谈。优先关注新信息正在强化、挑战或修正的长期判断，以及持续未解决的问题；不要为了引用记忆而牵强关联。尽量让三个问题覆盖战略判断、AI 产品理解、外部行业认知，但可以根据证据动态调整。\n\n上下文：\n${context}`;
   const answer = await askGPT("保持中文，重视具体证据和可验证的判断。", prompt);
   const parsed = answer ? answer.split("\n").map((line) => line.replace(/^\s*(?:[-*]|\d+[.)])\s*/, "").trim()).filter(Boolean) : [];
   return [...new Set([...parsed, ...demoQuestions])].slice(0, 3);
@@ -81,7 +81,7 @@ function fallbackWeeklyReport(context, error) {
 }
 
 export async function generateWeeklyReport(context) {
-  const prompt = `你是个人战略导师。请用中文生成一份简洁但有洞察的周报，包含：本周信息主题、用户的关键思考、判断变化或冲突、尚未解决的问题、下周可继续追踪的线索、周末值得在社交媒体和行业社区关注的方向。使用网页搜索补充近期 AI 产品、技术与行业动态，推荐方向可以不局限于工作内容。不要虚构来源；外部动态给出可访问的来源链接，如果证据不足，明确写出不确定性。\n\n上下文：\n${context}`;
+  const prompt = `你是个人战略导师。请用中文生成一份简洁但有洞察的周报，包含：本周信息主题、用户的关键思考、长期认知中被强化/削弱/修订的部分、仍然存在的冲突、尚未解决的问题、下周可继续追踪的线索、周末值得在社交媒体和行业社区关注的方向。区分用户真实表达与 AI 推测，不要把导师建议写成用户观点。使用网页搜索补充近期 AI 产品、技术与行业动态，推荐方向可以不局限于工作内容。不要虚构来源；外部动态给出可访问的来源链接，如果证据不足，明确写出不确定性。\n\n上下文：\n${context}`;
   if (!process.env.OPENAI_API_KEY) return "本周尚未配置 GPT API Key，暂时无法生成 AI 周报。";
   try {
     return await askGPT("保持结构清晰，避免空泛的鸡汤。", prompt, { webSearch: true });
@@ -96,6 +96,20 @@ export async function generateWeeklyReport(context) {
   }
 }
 
-export async function generateMentorReply(context) {
-  return (await askGPT("你是一个会追问而不是代答的 mentor simulator。先回应用户的具体判断，再提出一个更尖锐、可验证的追问。", context)) || "我先记下这个判断。你认为最可能推翻它的反例是什么？";
+export const mentorAlignmentInstructions = `你是一个长期陪伴用户工作的 mentor simulator。你的目标不是展示更完整的答案，也不是用你的框架替换用户的框架，而是准确理解用户当前的思路，在这个思路上只推进一小步，或在必要时进行最小范围的纠偏。
+
+每次回复前在内部识别：用户要解决的问题、当前结论、依据、隐含假设和最不确定的位置，但不要展示这段内部分析。
+
+互动规则：
+- 先用一到两句话回应并准确还原用户当前判断，保留其中合理的部分。
+- 每轮最多引入一个新概念、指出一个核心问题、提出一个追问。
+- 优先推进证据、假设、反例或最小验证方式，不替用户完成整套分析。
+- 不要因为你知道另一套更完整的框架，就直接切换或重构用户的思路。
+- 只有关键事实错误或逻辑断裂时才纠偏；先说明原思路中仍成立的部分，再指出具体断点，并从断点继续。
+- 长期记忆只是辅助背景，不能压过用户当前表达。若记忆与当前表达冲突，指出变化并询问，不要替用户判定哪个才是真实观点。
+- 信息不足时只问一个澄清问题。回复自然、克制，不显示步骤标签。`;
+
+export async function generateMentorReply(context, memories = []) {
+  const input = `${context}\n\n可能相关的长期认知（只作辅助，按当前表达校正）：\n${JSON.stringify(memories, null, 2)}`;
+  return (await askGPT(mentorAlignmentInstructions, input)) || "我理解你正在沿着这个判断继续推。先只往前走一步：当前最需要补强的是哪一条证据？";
 }

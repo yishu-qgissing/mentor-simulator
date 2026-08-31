@@ -6,6 +6,7 @@ import { extractPage } from "./services/extractor.js";
 import { createDailyQuestions, createWeeklyReport, startScheduler } from "./services/scheduler.js";
 import { generateMentorReply } from "./services/openai.js";
 import { sendFeishuText } from "./services/feishu.js";
+import { extractAndStoreLongTermMemory, listLongTermMemories } from "./services/memory.js";
 
 const app = express();
 app.use(cors());
@@ -66,6 +67,7 @@ app.patch("/api/todos/:id", (req, res) => {
 });
 
 app.get("/api/questions", (_req, res) => res.json(db.prepare("SELECT * FROM questions ORDER BY created_at DESC LIMIT 30").all()));
+app.get("/api/memories", (_req, res) => res.json(listLongTermMemories(100)));
 app.post("/api/jobs/daily", async (_req, res) => res.json({ questions: await createDailyQuestions() }));
 app.post("/api/jobs/weekly", async (_req, res) => res.json({ report: await createWeeklyReport() }));
 
@@ -94,9 +96,19 @@ app.post("/api/feishu/events", async (req, res) => {
     db.prepare("UPDATE questions SET answered_at=? WHERE id=?").run(now(), question.id);
     const conversation = db.prepare("SELECT role,content FROM messages WHERE question_id=? ORDER BY created_at ASC").all(question.id);
     const context = `问题：${question.prompt}\n对话记录：\n${conversation.map((item) => `${item.role === "user" ? "用户" : "导师"}：${item.content}`).join("\n")}`;
-    const reply = await generateMentorReply(context);
+    const relevantMemories = listLongTermMemories(12);
+    const reply = await generateMentorReply(context, relevantMemories);
     db.prepare("INSERT INTO messages(question_id,role,content,created_at) VALUES(?,?,?,?)").run(question.id, "assistant", reply, now());
     await sendFeishuText(reply, senderOpenId);
+    try {
+      await extractAndStoreLongTermMemory({
+        questionId: question.id,
+        question: question.prompt,
+        conversation: [...conversation, { role: "assistant", content: reply }]
+      });
+    } catch (memoryError) {
+      console.error("长期认知提取失败", memoryError);
+    }
   } catch (error) {
     console.error("处理飞书事件失败", error);
   }

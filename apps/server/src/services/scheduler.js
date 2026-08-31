@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { db, now, localDate, getSetting, listProjects, listSources } from "../db.js";
 import { generateDailyQuestions, generateWeeklyReport } from "./openai.js";
 import { sendFeishuText } from "./feishu.js";
+import { listLongTermMemories } from "./memory.js";
 
 const DEFAULT_DAILY_CRON = "0 20 * * 1-5";
 const DEFAULT_WEEKLY_CRON = "0 14 * * 6";
@@ -12,7 +13,8 @@ function contextFor(days) {
   const projects = listProjects();
   const questions = db.prepare("SELECT id,day,prompt,answered_at FROM questions WHERE created_at >= ? ORDER BY created_at DESC LIMIT 30").all(cutoff);
   const conversations = db.prepare("SELECT m.question_id,m.role,m.content,m.created_at FROM messages m WHERE m.created_at >= ? ORDER BY m.created_at ASC LIMIT 100").all(cutoff);
-  return JSON.stringify({ sources, projects, questions, conversations }, null, 2);
+  const longTermMemories = listLongTermMemories(20);
+  return JSON.stringify({ sources, projects, questions, conversations, longTermMemories }, null, 2);
 }
 
 export async function createDailyQuestions() {

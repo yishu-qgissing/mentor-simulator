@@ -1,10 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { askGPT, generateDailyQuestions, generateWeeklyReport, responsesEndpoint } from "../src/services/openai.js";
+import { askGPT, generateDailyQuestions, generateWeeklyReport, mentorAlignmentInstructions, responsesEndpoint } from "../src/services/openai.js";
 
 test("responsesEndpoint supports OpenAI-compatible gateways", () => {
   assert.equal(responsesEndpoint("https://rightapi.ai/codex/v1/"), "https://rightapi.ai/codex/v1/responses");
   assert.equal(responsesEndpoint("https://api.openai.com/v1"), "https://api.openai.com/v1/responses");
+});
+
+test("mentor prompt enforces thought alignment and a single incremental move", () => {
+  assert.match(mentorAlignmentInstructions, /不是用你的框架替换用户的框架/);
+  assert.match(mentorAlignmentInstructions, /只推进一小步/);
+  assert.match(mentorAlignmentInstructions, /每轮最多引入一个新概念、指出一个核心问题、提出一个追问/);
+  assert.match(mentorAlignmentInstructions, /最小范围的纠偏/);
 });
 
 test("daily generation always returns exactly three questions without a key", async () => {

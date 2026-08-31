@@ -68,6 +68,38 @@ db.exec(`
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS cognitive_memories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    content TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    importance INTEGER NOT NULL DEFAULT 50,
+    confidence TEXT NOT NULL DEFAULT 'medium',
+    evidence TEXT NOT NULL DEFAULT '',
+    source_question_id INTEGER,
+    supersedes_id INTEGER,
+    first_seen_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(source_question_id) REFERENCES questions(id) ON DELETE SET NULL,
+    FOREIGN KEY(supersedes_id) REFERENCES cognitive_memories(id) ON DELETE SET NULL
+  );
+  CREATE TABLE IF NOT EXISTS memory_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    memory_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    evidence TEXT NOT NULL DEFAULT '',
+    source_question_id INTEGER,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(memory_id) REFERENCES cognitive_memories(id) ON DELETE CASCADE,
+    FOREIGN KEY(source_question_id) REFERENCES questions(id) ON DELETE SET NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_cognitive_memories_retrieval
+    ON cognitive_memories(status, importance DESC, last_seen_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_memory_events_memory
+    ON memory_events(memory_id, created_at DESC);
 `);
 
 export function now() {
