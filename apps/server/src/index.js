@@ -17,7 +17,12 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
-app.get("/api/health", (_req, res) => res.json({ ok: true, service: "mentor-simulator", time: now() }));
+app.get("/api/health", (_req, res) => res.json({
+  ok: true,
+  service: "mentor-simulator",
+  version: process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) || "local",
+  time: now()
+}));
 app.get("/api/dashboard", (_req, res) => res.json(dashboard()));
 app.get("/api/sources", (_req, res) => res.json(db.prepare("SELECT * FROM sources ORDER BY created_at DESC").all()));
 app.post("/api/sources", async (req, res) => {
