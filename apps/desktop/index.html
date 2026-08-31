@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
     <title>Mentor Simulator</title>
   </head>
   <body>
     <div id="root">
-      <main style="min-height:100vh;padding:72px 28px;background:#f5f6f8;color:#20242c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-        <strong style="font-size:18px">Mentor Simulator</strong>
-        <p id="boot-status" style="margin-top:12px;color:#68707d;line-height:1.6">正在加载工作台...</p>
+      <main style="min-height:100vh;padding:72px 24px;background:#fafbf9;color:#1c211e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <strong style="font-size:15px;font-weight:600">Mentor</strong>
+        <p id="boot-status" style="margin-top:10px;color:#7d867f;font-size:12px;line-height:1.6">正在连接工作台...</p>
       </main>
     </div>
     <script>
@@ -17,12 +18,8 @@
         const status = document.getElementById("boot-status");
         if (status) status.textContent = message || "界面资源加载失败，请重新安装最新版。";
       }
-      window.addEventListener("error", (event) => {
-        showBootError(event.error?.message || event.message);
-      }, true);
-      window.addEventListener("unhandledrejection", (event) => {
-        showBootError(event.reason?.message || String(event.reason || ""));
-      });
+      window.addEventListener("error", (event) => showBootError(event.error?.message || event.message), true);
+      window.addEventListener("unhandledrejection", (event) => showBootError(event.reason?.message || String(event.reason || "")));
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
