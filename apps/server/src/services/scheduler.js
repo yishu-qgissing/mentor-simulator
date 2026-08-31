@@ -3,6 +3,9 @@ import { db, now, localDate, getSetting, listProjects, listSources } from "../db
 import { generateDailyQuestions, generateWeeklyReport } from "./openai.js";
 import { sendFeishuText } from "./feishu.js";
 
+const DEFAULT_DAILY_CRON = "0 20 * * 1-5";
+const DEFAULT_WEEKLY_CRON = "0 14 * * 6";
+
 function contextFor(days) {
   const cutoff = new Date(Date.now() - days * 86400000).toISOString();
   const sources = db.prepare("SELECT id,title,url,excerpt,substr(content,1,8000) AS content,created_at FROM sources WHERE created_at >= ? ORDER BY created_at DESC LIMIT 40").all(cutoff);
@@ -34,9 +37,43 @@ export async function createWeeklyReport() {
   return content;
 }
 
+export function isWeekday(date = new Date(), timezone = process.env.TZ || "Asia/Shanghai") {
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short" }).format(date);
+  return weekday !== "Sat" && weekday !== "Sun";
+}
+
+async function runLoggedJob(name, job) {
+  console.log(`[scheduler] ${name} started`);
+  try {
+    const result = await job();
+    console.log(`[scheduler] ${name} completed`);
+    return result;
+  } catch (error) {
+    console.error(`[scheduler] ${name} failed`, error);
+    throw error;
+  }
+}
+
+export async function runScheduledDaily(date = new Date()) {
+  const timezone = process.env.TZ || "Asia/Shanghai";
+  if (!isWeekday(date, timezone)) {
+    console.log(`[scheduler] daily skipped: weekend in ${timezone}`);
+    return null;
+  }
+  return runLoggedJob("daily", createDailyQuestions);
+}
+
+export function runScheduledWeekly() {
+  return runLoggedJob("weekly", createWeeklyReport);
+}
+
 export function startScheduler() {
-  cron.schedule(process.env.DAILY_CRON || "0 20 * * *", () => createDailyQuestions().catch(console.error), { timezone: process.env.TZ || "Asia/Shanghai" });
-  cron.schedule(process.env.WEEKLY_CRON || "0 14 * * 6", () => createWeeklyReport().catch(console.error), { timezone: process.env.TZ || "Asia/Shanghai" });
+  const timezone = process.env.TZ || "Asia/Shanghai";
+  const dailyCron = process.env.DAILY_CRON || DEFAULT_DAILY_CRON;
+  const weeklyCron = process.env.WEEKLY_CRON || DEFAULT_WEEKLY_CRON;
+  console.log(`[scheduler] daily=${dailyCron} weekly=${weeklyCron} timezone=${timezone}`);
+  cron.schedule(dailyCron, () => runScheduledDaily().catch(() => {}), { timezone });
+  cron.schedule(weeklyCron, () => runScheduledWeekly().catch(() => {}), { timezone });
 }
 
 export { listSources };

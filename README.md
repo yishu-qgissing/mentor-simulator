@@ -14,6 +14,8 @@ npm run dev
 
 OpenAI-compatible 模型服务、飞书和定时任务均通过 `apps/server/.env` 配置。未配置凭据时，服务仍可使用演示数据和本地流程。
 
+默认推送时间（`Asia/Shanghai`）：周一至周五 20:00 发送三个日报问题，周六 14:00 发送周报；周末晚间不发送日报。
+
 完整配置见 [第一版配置指南](docs/SETUP.md)，系统边界见 [架构说明](docs/ARCHITECTURE.md)。
 
 上线步骤见 [Railway 与 GitHub 部署](docs/DEPLOY.md)。

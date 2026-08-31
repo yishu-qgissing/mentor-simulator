@@ -57,7 +57,7 @@ export async function generateWeeklyReport(context) {
   try {
     return await askGPT("保持结构清晰，避免空泛的鸡汤。", prompt, { webSearch: true });
   } catch (error) {
-    if (!/OpenAI API (400|404|422)/.test(String(error.message))) throw error;
+    console.warn(`[weekly] web search unavailable, falling back to supplied context: ${error.message}`);
     return askGPT("保持结构清晰，避免空泛的鸡汤。无法联网时只使用给定上下文，并明确说明外部动态未实时检索。", prompt);
   }
 }
